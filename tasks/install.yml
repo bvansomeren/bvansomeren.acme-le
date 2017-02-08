@@ -1,0 +1,40 @@
+---
+# tasks file for bvansomeren.acme-le
+
+- name: ensure acme group
+  group:
+    name: "{{ acme_le_user }}"
+    state: present
+
+- name: ensure acme user
+  user:
+    name: "{{ acme_le_user }}"
+    group: "{{ acme_le_user }}"
+    state: present
+
+- name: ensure checkout and cert output folders
+  file:
+    path: "{{ item }}" 
+    state: directory
+  when: acme_le_acme_download_folder is defined
+  with_items:
+  - "{{ acme_le_acme_download_folder }}"
+  - "{{ acme_le_ssl_folder }}"
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: checkout acme.sh from git
+  git:
+    repo: https://github.com/Neilpang/acme.sh.git
+    dest: "{{ acme_le_acme_download_folder }}"
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: install acme.sh
+  shell: "./acme.sh --install --home {{ acme_le_acme_home_folder }} {% if acme_le_acme_email is defined %} --accountemail {{ acme_le_acme_email }} {% endif %}"
+  args:
+    chdir: "{{ acme_le_acme_download_folder }}"
+    creates: "{{ acme_le_acme_home_folder }}"
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
