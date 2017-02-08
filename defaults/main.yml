@@ -1,0 +1,12 @@
+---
+# defaults file for bvansomeren.acme-le
+
+# Let's encrypt
+acme_le_letsencrypt_enabled: yes
+#acme_le_letsencrypt_challenges: /var/www/letsencrypt
+acme_le_acme_download_folder: "~/checkouts/"
+acme_le_acme_home_folder: "~/.acme.sh"
+
+acme_le_ssl_folder: "~/ssl/"
+acme_le_standalone_port: 8080
+acme_le_user: acme

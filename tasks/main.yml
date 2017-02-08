@@ -1,0 +1,82 @@
+---
+# tasks file for bvansomeren.acme-le
+
+- name: ensure acme group
+  group:
+    name: "{{ acme_le_user }}"
+    state: present
+
+- name: ensure acme user
+  user:
+    name: "{{ acme_le_user }}"
+    group: "{{ acme_le_user }}"
+    state: present
+
+- name: ensure checkout and cert output folders
+  file:
+    path: "{{ item }}" 
+    state: directory
+  when: acme_le_acme_download_folder is defined and acme_le_letsencrypt_enabled
+  with_items:
+  - "{{ acme_le_acme_download_folder }}"
+  - "{{ acme_le_ssl_folder }}"
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: checkout acme.sh from git
+  git:
+    repo: https://github.com/Neilpang/acme.sh.git
+    dest: "{{ acme_le_acme_download_folder }}"
+  when: acme_le_letsencrypt_enabled
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: install acme.sh
+  shell: "./acme.sh --install --home {{ acme_le_acme_home_folder }} {% if acme_le_acme_email is defined %} --accountemail {{ acme_le_acme_email }} {% endif %}"
+  args:
+    chdir: "{{ acme_le_acme_download_folder }}"
+    creates: "{{ acme_le_acme_home_folder }}"
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: ensure certificates are setup using webroot
+  shell: "./acme.sh --issue -d {{ item.server_name }} -w {{ acme_le_letsencrypt_challenges }}"
+  args:
+    chdir: "{{ acme_le_acme_home_folder }}"
+    creates: "{{ acme_le_acme_home_folder }}/{{ item.server_name }}/fullchain.cer"
+  with_items: "{{ acme_le_vhosts }}"
+  when: acme_le_webroot and item.letsencrypt is defined and item.letsencrypt
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: ensure certificates are setup using standalone
+  shell: "./acme.sh --issue --standalone --httpport {{ acme_le_standalone_port }} -d {{ item.server_name }}"
+  args:
+    chdir: "{{ acme_le_acme_home_folder }}"
+    creates: "{{ acme_le_acme_home_folder }}/{{ item.server_name }}/fullchain.cer"
+  with_items: "{{ acme_le_vhosts }}"
+  when: not acme_le_webroot and item.letsencrypt is defined and item.letsencrypt
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: ensure ssl folders for each domain
+  file:
+    path: "{{ acme_le_ssl_folder }}/{{ item.server_name }}"
+    state: directory
+  when: item.letsencrypt is defined and item.letsencrypt
+  with_items: "{{ acme_le_vhosts }}"
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+- name: ensure certificates are installed
+  shell: "./acme.sh --install-cert -d {{ item.server_name }} --keypath {{ acme_le_ssl_folder }}/{{ item.server_name }}/key.pem --fullchainpath {{ acme_le_ssl_folder }}/{{ item.server_name }}/cert.pem"
+  args:
+    chdir: "{{ acme_le_acme_home_folder }}"
+    creates: "{{ acme_le_ssl_folder }}/{{ item.server_name }}/cert.pem"
+  with_items: "{{ acme_le_vhosts }}"
+  when: acme_le_letsencrypt_enabled and item.letsencrypt is defined and item.letsencrypt
+  register: certs_installed
+  become: yes
+  become_user: "{{ acme_le_user }}"
+
+
