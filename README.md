@@ -1,31 +1,69 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+Installs acme.sh and issues certificates through Let's Encrypt.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Openssl, Git and SH / Bash. Will work with FreeBSD 11 and base. (+git)
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+```
+acme_le_acme_download_folder: "~/checkouts/"
+```  
+
+Where git will check out acme.sh
+
+```
+acme_le_acme_home_folder: "~/.acme.sh"
+```  
+
+Where acme.sh is installed
+
+```
+acme_le_ssl_folder: "~/ssl/"
+```
+
+Where the certificates are stored
+
+```
+acme_le_standalone_port: 8080
+```
+
+Which port to listen on in standalone mode (>1024 does not require root)  
+
+```
+acme_le_user: acme
+```
+
+The user that will be created for running acme.sh
+
+```
+acme_le_webroot
+```
+
+Whether to use webroot or standalone
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+None, though a jail can be helpful
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+		- hosts: acme-le
+  	  	  vars:
+  	  	    vhosts:
+  	  	    - server_name: "example.com"
+           acme_le_vhosts: "{{ vhosts }}"
+           acme_le_webroot: no
+  		  roles:
+         - bvansomeren.acme-le
 
 License
 -------
