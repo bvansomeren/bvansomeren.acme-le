@@ -1,42 +1,14 @@
 ---
 # for issuing
 
-- name: ensure certificates are setup using webroot
-  shell: "./acme.sh --issue -d {{ item.server_name }} -w {{ acme_le_letsencrypt_challenges }}"
-  args:
-    chdir: "{{ acme_le_acme_home_folder }}"
-    creates: "{{ acme_le_acme_home_folder }}/{{ item.server_name }}/fullchain.cer"
-  with_items: "{{ acme_le_vhosts }}"
-  when: acme_le_webroot and item.letsencrypt is defined and item.letsencrypt
-  become: yes
-  become_user: "{{ acme_le_user }}"
-
 - name: ensure certificates are setup using standalone
-  shell: "./acme.sh --issue --standalone --httpport {{ acme_le_standalone_port }} -d {{ item.server_name }}"
+  shell: "acme.sh --issue {% if acme_test %} --test {% endif %} --standalone {% if letsencrypt_host is defined %} --local-address {{ letsencrypt_host }} {% endif %} --httpport {{ acme_standalone_port }} -k {{ acme_keylength }} -d {{ domain }} {% for alternative in alternatives %} -d {{ alternative }} {% endfor %}"
   args:
-    chdir: "{{ acme_le_acme_home_folder }}"
-    creates: "{{ acme_le_acme_home_folder }}/{{ item.server_name }}/fullchain.cer"
-  with_items: "{{ acme_le_vhosts }}"
-  when: not acme_le_webroot and item.letsencrypt is defined and item.letsencrypt
-  become: yes
-  become_user: "{{ acme_le_user }}"
+    chdir: "{{ acme_home }}/.acme.sh/"
+    creates: "{{ acme_home }}/certs/{{ domain }}"
 
-- name: ensure ssl folders for each domain
-  file:
-    path: "{{ acme_le_ssl_folder }}/{{ item.server_name }}"
-    state: directory
-  when: item.letsencrypt is defined and item.letsencrypt
-  with_items: "{{ acme_le_vhosts }}"
-  become: yes
-  become_user: "{{ acme_le_user }}"
-
-- name: ensure certificates are installed
-  shell: "./acme.sh --install-cert -d {{ item.server_name }} --keypath {{ acme_le_ssl_folder }}/{{ item.server_name }}/key.pem --fullchainpath {{ acme_le_ssl_folder }}/{{ item.server_name }}/cert.pem"
+- name: combine full chain and key for haproxy
+  shell: "cat fullchain.cer {{ domain }}.key > {{ domain }}-combined"
   args:
-    chdir: "{{ acme_le_acme_home_folder }}"
-    creates: "{{ acme_le_ssl_folder }}/{{ item.server_name }}/cert.pem"
-  with_items: "{{ acme_le_vhosts }}"
-  when: item.letsencrypt is defined and item.letsencrypt
-  register: certs_installed
-  become: yes
-  become_user: "{{ acme_le_user }}"
+    chdir: "{{ acme_home }}/certs/{{ domain }}"
+    creates: "{{ domain }}-combined"

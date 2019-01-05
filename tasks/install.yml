@@ -1,40 +1,42 @@
 ---
-# tasks file for bvansomeren.acme-le
+# tasks file for bvansomeren.acme
 
-- name: ensure acme group
-  group:
-    name: "{{ acme_le_user }}"
+- name: ensure acme.sh pkg is installed
+  package:
+    name: acme.sh
     state: present
 
-- name: ensure acme user
-  user:
-    name: "{{ acme_le_user }}"
-    group: "{{ acme_le_user }}"
-    state: present
+- name: get home folder
+  getent:
+    database: passwd
+    key: "acme"
+    split: ":"
 
-- name: ensure checkout and cert output folders
+- set_fact:
+    acme_home: "{{ getent_passwd['acme'][4] }}"
+
+- name: ensure account.conf is configured
+  template:
+    src: account.conf
+    dest: "{{ acme_home }}/.acme.sh/account.conf"
+    owner: acme
+    group: acme
+
+- name: ensure logfile exists
+  copy:
+    force: False
+    dest: /var/log/acme.sh.log
+    content: ""
+    owner: acme
+    group: acme
+    mode: 0640
+
+- name: ensure newsyslog.conf.d is present in /usr/local/etc
   file:
-    path: "{{ item }}" 
+    path: /usr/local/etc/newsyslog.conf.d/
     state: directory
-  when: acme_le_acme_download_folder is defined
-  with_items:
-  - "{{ acme_le_acme_download_folder }}"
-  - "{{ acme_le_ssl_folder }}"
-  become: yes
-  become_user: "{{ acme_le_user }}"
 
-- name: checkout acme.sh from git
-  git:
-    repo: https://github.com/Neilpang/acme.sh.git
-    dest: "{{ acme_le_acme_download_folder }}"
-  become: yes
-  become_user: "{{ acme_le_user }}"
-
-- name: install acme.sh
-  shell: "./acme.sh --install --home {{ acme_le_acme_home_folder }} {% if acme_le_acme_email is defined %} --accountemail {{ acme_le_acme_email }} {% endif %}"
-  args:
-    chdir: "{{ acme_le_acme_download_folder }}"
-    creates: "{{ acme_le_acme_home_folder }}"
-  become: yes
-  become_user: "{{ acme_le_user }}"
-
+- name: ensure syslogging is setup
+  template:
+    src: acme.sh.conf
+    dest: /usr/local/etc/newsyslog.conf.d/acme.sh.conf

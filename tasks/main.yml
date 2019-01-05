@@ -1,15 +1,12 @@
 ---
 # tasks file for bvansomeren.acme-le
 
-- stat:
-    path: "{{ acme_le_acme_home_folder }}"
-  register: install_folder
-
-- name: install if required
+- name: install acme.sh
   include: install.yml
-  when: not install_folder.stat.exists
 
-- name: issue certificates
-  include: issue.yml
-  static: no
-  when: "{{ acme_le_vhosts is defined }}" 
+- block:
+  - name: issue certificates
+    include_tasks: issue.yml
+  become_user: "{{ acme_user }}"
+  become: True
+  when: domain is defined

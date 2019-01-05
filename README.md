@@ -1,48 +1,43 @@
-bvansomeren.acme-le
-===================
+bvansomeren.acme
+================
 
 Installs acme.sh and issues certificates through Let's Encrypt.
 
 Requirements
 ------------
 
-Openssl, Git and SH / Bash. Will work with FreeBSD 11 and base. (+git)
+Will work with FreeBSD 11 and base.
 
 Role Variables
 --------------
 
 ```
-acme_le_acme_download_folder: "~/checkouts/"
+acme_download_folder: "~/checkouts/"
 ```  
 
 Where git will check out acme.sh
 
 ```
-acme_le_acme_home_folder: "~/.acme.sh"
+acme_acme_home_folder: "~/.acme.sh"
 ```  
 
 Where acme.sh is installed
 
 ```
-acme_le_ssl_folder: "~/ssl/"
+acme_ssl_folder: "~/ssl/"
 ```
 
 Where the certificates are stored
 
 ```
-acme_le_standalone_port: 8080
+acme_standalone_port: 8080
 ```
 
 Which port to listen on in standalone mode (>1024 does not require root)  
 
-```
-acme_le_user: acme
-```
-
-The user that will be created for running acme.sh
 
 ```
-acme_le_webroot
+acme_webroot
 ```
 
 Whether to use webroot or standalone
@@ -60,10 +55,10 @@ Example Playbook
   	  	  vars:
   	  	    vhosts:
   	  	    - server_name: "example.com"
-           acme_le_vhosts: "{{ vhosts }}"
-           acme_le_webroot: no
+           acme_vhosts: "{{ vhosts }}"
+           acme_webroot: no
   		  roles:
-         - bvansomeren.acme-le
+         - bvansomeren.acme
 
 License
 -------
