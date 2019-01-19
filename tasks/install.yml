@@ -1,9 +1,9 @@
 ---
 # tasks file for bvansomeren.acme
 
-- name: ensure acme.sh pkg is installed
+- name: ensure acme.sh and rsync pkgs are installed
   package:
-    name: acme.sh
+    name: acme.sh rsync
     state: present
 
 - name: get home folder
@@ -15,12 +15,53 @@
 - set_fact:
     acme_home: "{{ getent_passwd['acme'][4] }}"
 
+- name: ensure acme ssh key is setup for pushing
+  shell: ssh-keygen -b 2048 -t rsa -f {{ acme_home }}/.ssh/id_rsa -q -N ""
+  args:
+    creates: "{{ acme_home }}/.ssh/id_rsa"
+  become: True
+  become_user: acme
+
+- name: ensure copy of ssh-pubkey exists on controller
+  fetch: 
+    dest: "{{ playbook_dir }}/files/"
+    src: "{{ acme_home }}/.ssh/id_rsa.pub"
+
+- name: keyscan and register the loadbalancers
+  command: "ssh-keyscan {{ item }}"
+  changed_when: False
+  with_items: "{{ loadbalancers }}"
+  register: keyscan
+
+- debug:
+    msg: "line: {{  item }}"
+    verbosity: 2
+  with_items: "{{ keyscan.results | map(attribute='stdout_lines')|list }}" 
+
+- name: ensure loadbalancers are added to the known_hosts for acme
+  lineinfile:
+    dest: "{{ acme_home }}/.ssh/known_hosts"
+    create: yes
+    owner: acme
+    group: acme
+    mode: 0644
+    state: present
+    line: "{{ item }}"
+  with_items: "{{ keyscan.results | map(attribute='stdout_lines')|list }}"
+
 - name: ensure account.conf is configured
   template:
     src: account.conf
     dest: "{{ acme_home }}/.acme.sh/account.conf"
     owner: acme
     group: acme
+
+- name: ensure haproxy_export_folder
+  file:
+    path: "{{ haproxy_export_folder }}"
+    owner: acme
+    group: acme
+    state: directory
 
 - name: ensure logfile exists
   copy:

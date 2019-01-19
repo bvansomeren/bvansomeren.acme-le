@@ -8,7 +8,13 @@
     creates: "{{ acme_home }}/certs/{{ domain }}"
 
 - name: combine full chain and key for haproxy
-  shell: "cat fullchain.cer {{ domain }}.key > {{ domain }}-combined"
+  shell: "cat {{ domain }}/fullchain.cer {{ domain }}/{{ domain }}.key > {{ haproxy_export_folder }}/{{ domain }}-combined"
   args:
-    chdir: "{{ acme_home }}/certs/{{ domain }}"
-    creates: "{{ domain }}-combined"
+    chdir: "{{ acme_home }}/certs/"
+    creates: "{{ haproxy_export_folder }}/{{ domain }}-combined"
+
+- name: rsync to loadbalancers
+  command: "rsync -azv {{ acme_home }}/certs/haproxy_export {{ item }}:~/certs/"
+  become: True
+  become_user: acme
+  with_items: "{{ loadbalancers }}"

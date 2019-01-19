@@ -1,0 +1,28 @@
+---
+
+- name: ensure rsync
+  package:
+    name: rsync
+    state: present
+
+- name: ensure acme user
+  user:
+    name: acme
+    group: acme
+    state: present
+    home: /var/db/acme/
+
+- name: ensure authorized_key is present
+  authorized_key:
+    user: acme
+    state: present
+    key: "{{ lookup('file', acme_pubkey) }}"
+
+- name: ensure certs folder
+  file:
+    state: directory
+    path: /var/db/acme/certs
+    owner: acme
+    group: acme
+
+

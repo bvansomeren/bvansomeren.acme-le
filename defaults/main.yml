@@ -9,3 +9,7 @@ acme_keylength: 4096
 
 alternatives:
 - www.{{ domain }}
+
+haproxy_export_folder: "{{ acme_home }}/certs/haproxy_export"
+
+loadbalancers: []
