@@ -4,9 +4,9 @@
 - name: install acme.sh
   include: install.yml
 
-- block:
-  - name: issue certificates
-    include_tasks: issue.yml
-  become_user: "{{ acme_user }}"
-  become: True
-  when: domain is defined
+#- block:
+#  - name: issue certificates
+#    include_tasks: issue.yml
+#  become_user: "{{ acme_user }}"
+#  become: True
+#  when: domain is defined

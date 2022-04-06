@@ -3,7 +3,7 @@
 
 - name: ensure acme.sh and rsync pkgs are installed
   package:
-    name: acme.sh rsync
+    name: acme.sh
     state: present
 
 - name: get home folder
@@ -36,7 +36,7 @@
 - debug:
     msg: "line: {{  item }}"
     verbosity: 2
-  with_items: "{{ keyscan.results | map(attribute='stdout_lines')|list }}" 
+  with_items: "{{ keyscan.results | map(attribute='stdout_lines')|list }}"
 
 - name: ensure loadbalancers are added to the known_hosts for acme
   lineinfile:
